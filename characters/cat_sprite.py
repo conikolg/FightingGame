@@ -9,14 +9,14 @@ tile_size = 64
 base_image = pygame.image.load('assets/cat_fighter_base.png')
 
 
-class CatFighter(pygame.sprite.Sprite):
+class Cat(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
 
         # Necessary for sprites
         self.image = pygame.Surface((tile_size, tile_size))
         self.rect = self.image.get_rect()
-        self.rect.topleft = (100, 100)
+        self.rect.bottomleft = (600, 600)
 
         self.animations: dict[str, SpriteAnimation] = {
             # Load idle animation
@@ -28,6 +28,10 @@ class CatFighter(pygame.sprite.Sprite):
             'walk': SpriteAnimation(
                 [base_image.subsurface((tile_size * x, tile_size * 1, tile_size, tile_size)) for x in range(8)],
                 np.ones(shape=(8,), dtype=float) / 20
+            ),
+            'jump': SpriteAnimation(
+                [base_image.subsurface((tile_size * x, tile_size * 2, tile_size, tile_size)) for x in range(8)],
+                np.ones(shape=(8,), dtype=float) / 20
             )
         }
 
@@ -36,9 +40,9 @@ class CatFighter(pygame.sprite.Sprite):
         self.current_state = CatStandingState(self)
 
         # Cat characteristics
-        self.walk_speed = 5
-        self.jump_speed = 15
-        self.gravity = 1
+        self.walk_speed = 5.0
+        self.jump_speed = 20.0
+        self.gravity = .8
 
     def update(self, *args: Any, **kwargs: Any) -> None:
         new_state = self.current_state.update(frametime=kwargs['frametime'])
@@ -49,7 +53,7 @@ class CatFighter(pygame.sprite.Sprite):
 
 
 class CatState:
-    def __init__(self, cat: CatFighter, *args, **kwargs):
+    def __init__(self, cat: Cat, *args, **kwargs):
         self.cat = cat
 
     def update(self, *args, **kwargs):
@@ -63,7 +67,7 @@ class CatState:
 
 
 class CatStandingState(CatState):
-    def __init__(self, cat: CatFighter, *args, **kwargs):
+    def __init__(self, cat: Cat, *args, **kwargs):
         super().__init__(cat)
 
     def on_enter(self, *args, **kwargs):
@@ -82,6 +86,10 @@ class CatStandingState(CatState):
         if keymap[pygame.K_a] or keymap[pygame.K_d]:
             return CatWalkingState(self.cat)
 
+        # Did the player jump?
+        if keymap[pygame.K_w]:
+            return CatJumpingState(self.cat)
+
         # Cat must be standing
         frametime: float = kwargs['frametime']
         self.cat.animations['idle'].advance(frametime)
@@ -96,11 +104,11 @@ class CatStandingState(CatState):
 
 
 class CatWalkingState(CatState):
-    def __init__(self, cat: CatFighter, *args, **kwargs):
+    def __init__(self, cat: Cat, *args, **kwargs):
         super().__init__(cat)
 
         # Additional state of the cat
-        self.x_speed = 0
+        self.x_speed = None
 
     def on_enter(self, *args, **kwargs):
         self.cat.animations['walk'].reset()
@@ -113,6 +121,10 @@ class CatWalkingState(CatState):
     def update(self, *args, **kwargs) -> Optional[CatState]:
         # Get state of keyboard
         keymap = pygame.key.get_pressed()
+
+        # Did the player jump?
+        if keymap[pygame.K_w]:
+            return CatJumpingState(self.cat)
 
         # Is the cat walking?
         if keymap[pygame.K_a] or keymap[pygame.K_d]:
@@ -138,3 +150,62 @@ class CatWalkingState(CatState):
 
         # Cat must be standing
         return CatStandingState(self.cat)
+
+
+class CatJumpingState(CatState):
+    def __init__(self, cat: Cat, *args, **kwargs):
+        super().__init__(cat)
+
+        # Additional state of the cat
+        self.x_speed = None
+        self.y_speed = None
+
+    def on_enter(self, *args, **kwargs):
+        self.y_speed = self.cat.jump_speed
+        self.cat.animations['jump'].reset()
+        image: pygame.Surface = self.cat.animations['jump'].get_current_frame()
+        if self.cat.direction == 'right':
+            self.cat.image = image
+        else:
+            self.cat.image = pygame.transform.flip(image, True, False)
+
+    def update(self, *args, **kwargs):
+        # Get state of the keyboard
+        keymap = pygame.key.get_pressed()
+
+        # Move horizontally
+        self.x_speed = 0
+        if keymap[pygame.K_a]:
+            self.cat.direction = 'left'
+            self.x_speed -= self.cat.walk_speed
+        if keymap[pygame.K_d]:
+            self.cat.direction = 'right'
+            self.x_speed += self.cat.walk_speed
+
+        # Be affected by gravity
+        self.y_speed -= self.cat.gravity
+
+        # Move
+        self.cat.rect.move_ip(self.x_speed, -self.y_speed)
+
+        # See if we hit the ground TODO: make actual ground
+        if self.cat.rect.bottom >= 600:
+            # The cat is walking on the ground
+            self.cat.rect.bottom = 600
+            return CatWalkingState(self.cat)
+
+        # Still jumping/falling, animate
+        frametime: float = kwargs['frametime']
+        self.cat.animations['jump'].advance(frametime)
+        image: pygame.Surface = self.cat.animations['jump'].get_current_frame()
+        # Which direction is he going?
+        if keymap[pygame.K_d]:
+            self.x_speed = self.cat.walk_speed
+            self.cat.direction = 'right'
+            self.cat.image = image
+        else:
+            self.x_speed = -self.cat.walk_speed
+            self.cat.direction = 'left'
+            self.cat.image = pygame.transform.flip(image, True, False)
+
+        return None

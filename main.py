@@ -1,6 +1,6 @@
 import pygame
 
-from characters.cat_sprite import CatFighter
+from characters.cat_sprite import Cat
 
 pygame.init()
 screen = pygame.display.set_mode((1280, 720))
@@ -10,7 +10,7 @@ clock = pygame.time.Clock()
 target_framerate = 60
 
 players = pygame.sprite.Group()
-players.add(CatFighter())
+players.add(Cat())
 
 
 def main():
