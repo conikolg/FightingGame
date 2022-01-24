@@ -49,7 +49,7 @@ class CatFighter(pygame.sprite.Sprite):
 
 
 class CatState:
-    def __init__(self, cat: CatFighter):
+    def __init__(self, cat: CatFighter, *args, **kwargs):
         self.cat = cat
 
     def update(self, *args, **kwargs):
@@ -63,7 +63,7 @@ class CatState:
 
 
 class CatStandingState(CatState):
-    def __init__(self, cat: CatFighter):
+    def __init__(self, cat: CatFighter, *args, **kwargs):
         super().__init__(cat)
 
     def on_enter(self, *args, **kwargs):
@@ -96,7 +96,7 @@ class CatStandingState(CatState):
 
 
 class CatWalkingState(CatState):
-    def __init__(self, cat: CatFighter):
+    def __init__(self, cat: CatFighter, *args, **kwargs):
         super().__init__(cat)
 
         # Additional state of the cat
