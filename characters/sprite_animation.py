@@ -16,14 +16,16 @@ class SpriteAnimation:
         self.timings = timings
         self.time_offsets: np.ndarray[float] = np.cumsum(self.timings)
         self.current_time_offset = 0
+        self.repetitions = 0
 
     def reset(self) -> None:
         """
-        Resets the timer so the animation begins on the first frame of the loop
-        with the full duration of the first frame remaining.
+        Resets the timer so the animation begins on the first frame of the loop with
+        the full duration of the first frame remaining. Clears the repetition counter.
         :return:
         """
         self.current_time_offset = 0
+        self.repetitions = 0
 
     def get_current_frame(self) -> pygame.Surface:
         """
@@ -39,4 +41,6 @@ class SpriteAnimation:
         :param seconds: a float indicating how many seconds to advance the animation by
         """
         self.current_time_offset += seconds
-        self.current_time_offset = self.current_time_offset % sum(self.timings)
+        if self.current_time_offset > sum(self.timings):
+            self.current_time_offset = self.current_time_offset % sum(self.timings)
+            self.repetitions += 1

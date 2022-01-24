@@ -29,9 +29,15 @@ class Cat(pygame.sprite.Sprite):
                 [base_image.subsurface((tile_size * x, tile_size * 1, tile_size, tile_size)) for x in range(8)],
                 np.ones(shape=(8,), dtype=float) / 20
             ),
+            # Load jumping animation
             'jump': SpriteAnimation(
-                [base_image.subsurface((tile_size * x, tile_size * 2, tile_size, tile_size)) for x in range(8)],
-                np.ones(shape=(8,), dtype=float) / 20
+                [base_image.subsurface((tile_size * x, tile_size * 2, tile_size, tile_size)) for x in range(4)],
+                [0.05, 0.05, 0.5, 100.0]  # I want it to get stuck at a frame while in the air
+            ),
+            # Load landing animation
+            'landing': SpriteAnimation(
+                [base_image.subsurface((tile_size * x, tile_size * 2, tile_size, tile_size)) for x in range(4, 8)],
+                [0.0, 0.00, 0.70, 0.05]  # I want it to get stuck at a frame when landing
             )
         }
 
@@ -42,6 +48,7 @@ class Cat(pygame.sprite.Sprite):
         # Cat characteristics
         self.walk_speed = 5.0
         self.jump_speed = 20.0
+        self.landing_threshold = self.jump_speed * 1.5
         self.gravity = .8
 
     def update(self, *args: Any, **kwargs: Any) -> None:
@@ -189,10 +196,16 @@ class CatJumpingState(CatState):
         self.cat.rect.move_ip(self.x_speed, -self.y_speed)
 
         # See if we hit the ground TODO: make actual ground
-        if self.cat.rect.bottom >= 600:
-            # The cat is walking on the ground
-            self.cat.rect.bottom = 600
-            return CatWalkingState(self.cat)
+        ground_y = 600
+        if self.cat.rect.bottom >= ground_y:
+            # The cat is on the ground
+            self.cat.rect.bottom = ground_y
+            # Cat needs to land if going too fast
+            if self.y_speed <= -self.cat.landing_threshold:
+                return CatLandingState(self.cat)
+            # Cat can just start walking otherwise
+            else:
+                return CatWalkingState(self.cat)
 
         # Still jumping/falling, animate
         frametime: float = kwargs['frametime']
@@ -208,4 +221,34 @@ class CatJumpingState(CatState):
             self.cat.direction = 'left'
             self.cat.image = pygame.transform.flip(image, True, False)
 
+        return None
+
+
+class CatLandingState(CatState):
+    def __init__(self, cat: Cat, *args, **kwargs):
+        super().__init__(cat)
+
+    def on_enter(self, *args, **kwargs):
+        self.cat.animations['landing'].reset()
+        image: pygame.Surface = self.cat.animations['landing'].get_current_frame()
+        if self.cat.direction == 'right':
+            self.cat.image = image
+        else:
+            self.cat.image = pygame.transform.flip(image, True, False)
+
+    def update(self, *args, **kwargs):
+        # Recovering from landing...
+        frametime: float = kwargs['frametime']
+        self.cat.animations['landing'].advance(frametime)
+
+        # Has enough time passed in the landing animation?
+        if self.cat.animations['landing'].repetitions > 0:
+            return CatStandingState(self.cat)
+
+        # Otherwise, still recovering.
+        image: pygame.Surface = self.cat.animations['landing'].get_current_frame()
+        if self.cat.direction == 'right':
+            self.cat.image = image
+        else:
+            self.cat.image = pygame.transform.flip(image, True, False)
         return None
