@@ -1,6 +1,6 @@
 import pygame
 
-from characters.cat.cat_sprite import CatFighter
+from characters.cat_sprite import CatFighter
 
 pygame.init()
 screen = pygame.display.set_mode((1280, 720))
