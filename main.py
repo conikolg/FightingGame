@@ -9,8 +9,10 @@ pygame.display.set_caption('Fighting Game')
 clock = pygame.time.Clock()
 target_framerate = 60
 
+cat = Cat()
+
 players = pygame.sprite.Group()
-players.add(Cat())
+players.add(cat)
 
 
 def main():
@@ -26,6 +28,7 @@ def main():
 
         # Draw the new frame
         screen.fill((222, 134, 223))
+        # pygame.draw.rect(screen, (0, 0, 0), cat.rect, 1)
         players.draw(screen)
 
         # Frame is done

@@ -6,7 +6,12 @@ import pygame
 from characters.sprite_animation import SpriteAnimation
 
 tile_size = 64
-base_image = pygame.image.load('assets/cat/cat_fighter_base.png')
+base_img = pygame.image.load('assets/cat/cat_fighter_base.png')
+
+
+def crop(img: pygame.Surface):
+    top, bottom, left, right = 20, 8, 12, 12
+    return img.subsurface((left, top, img.get_width() - left - right, img.get_height() - top - bottom))
 
 
 class Cat(pygame.sprite.Sprite):
@@ -14,29 +19,29 @@ class Cat(pygame.sprite.Sprite):
         super().__init__()
 
         # Necessary for sprites
-        self.image = pygame.Surface((tile_size, tile_size))
+        self.image = crop(pygame.Surface((tile_size, tile_size)))
         self.rect = self.image.get_rect()
         self.rect.bottomleft = (600, 600)
 
         self.animations: dict[str, SpriteAnimation] = {
             # Load idle animation
             'idle': SpriteAnimation(
-                [base_image.subsurface((tile_size * x, tile_size * 0, tile_size, tile_size)) for x in range(4)],
+                [crop(base_img.subsurface((tile_size * x, tile_size * 0, tile_size, tile_size))) for x in range(4)],
                 np.ones(shape=(4,), dtype=float) / 10
             ),
             # Load walking animation
             'walk': SpriteAnimation(
-                [base_image.subsurface((tile_size * x, tile_size * 1, tile_size, tile_size)) for x in range(8)],
+                [crop(base_img.subsurface((tile_size * x, tile_size * 1, tile_size, tile_size))) for x in range(8)],
                 np.ones(shape=(8,), dtype=float) / 20
             ),
             # Load jumping animation
             'jump': SpriteAnimation(
-                [base_image.subsurface((tile_size * x, tile_size * 2, tile_size, tile_size)) for x in range(4)],
+                [crop(base_img.subsurface((tile_size * x, tile_size * 2, tile_size, tile_size))) for x in range(4)],
                 [0.05, 0.05, 0.5, 100.0]  # I want it to get stuck at a frame while in the air
             ),
             # Load landing animation
             'landing': SpriteAnimation(
-                [base_image.subsurface((tile_size * x, tile_size * 2, tile_size, tile_size)) for x in range(4, 8)],
+                [crop(base_img.subsurface((tile_size * x, tile_size * 2, tile_size, tile_size))) for x in range(4, 8)],
                 [0.0, 0.00, 0.70, 0.05]  # I want it to get stuck at a frame when landing
             )
         }
