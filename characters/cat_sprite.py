@@ -6,7 +6,7 @@ import pygame
 from characters.sprite_animation import SpriteAnimation
 
 tile_size = 64
-base_image = pygame.image.load('assets/cat_fighter_base.png')
+base_image = pygame.image.load('assets/cat/cat_fighter_base.png')
 
 
 class Cat(pygame.sprite.Sprite):
